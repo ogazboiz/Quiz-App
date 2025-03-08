@@ -2,35 +2,37 @@ import  { useState } from 'react';
 import { questions } from './QuizQuestions';
 
 interface IQuizQuestionState {
-    isAnswered: boolean;
     currentQuestion: number;
-    isCorrect: boolean | null;
-    selectedAnswer: number | null;
+    userAnswers: (number | null)[];
     score: number;
     isQuizOver: boolean;
 }
 
 const QuizGame = () => {
     const [quizState, setQuizState] = useState<IQuizQuestionState>({
-        isAnswered: false,
         currentQuestion: 0,
-        isCorrect: null,
-        selectedAnswer: null,
+        userAnswers: new Array(questions.length).fill(null), 
         score: 0,
         isQuizOver: false
     });
 
     const giveAnswer = (selectedAnswerIndex: number) => {
-        if (quizState.isAnswered) return;
+        const { currentQuestion, userAnswers } = quizState;
 
-        const isAnswerCorrect = selectedAnswerIndex === questions[quizState.currentQuestion].answer;
+        
+        const wasAlreadyAnswered = userAnswers[currentQuestion] !== null;
+        const isAnswerCorrect = selectedAnswerIndex === questions[currentQuestion].answer;
 
         setQuizState((prev) => ({
             ...prev,
-            isAnswered: true,
-            isCorrect: isAnswerCorrect,
-            selectedAnswer: selectedAnswerIndex,
-            score: isAnswerCorrect ? prev.score + 1 : prev.score
+            userAnswers: prev.userAnswers.map((ans, index) =>
+                index === currentQuestion ? selectedAnswerIndex : ans
+            ),
+            score: wasAlreadyAnswered
+                ? prev.score 
+                : isAnswerCorrect
+                ? prev.score + 1 
+                : prev.score
         }));
     };
 
@@ -38,10 +40,7 @@ const QuizGame = () => {
         if (quizState.currentQuestion + 1 < questions.length) {
             setQuizState((prev) => ({
                 ...prev,
-                currentQuestion: prev.currentQuestion + 1,
-                isAnswered: false,
-                isCorrect: null,
-                selectedAnswer: null
+                currentQuestion: prev.currentQuestion + 1
             }));
         } else {
             setQuizState((prev) => ({
@@ -50,14 +49,12 @@ const QuizGame = () => {
             }));
         }
     };
+
     const previousQuestion = () => {
         if (quizState.currentQuestion > 0) {
             setQuizState((prev) => ({
                 ...prev,
-                currentQuestion: prev.currentQuestion - 1,
-                isAnswered: false,
-                isCorrect: null,
-                selectedAnswer: null
+                currentQuestion: prev.currentQuestion - 1
             }));
         }
     };
@@ -73,18 +70,28 @@ const QuizGame = () => {
                             <button
                                 key={i}
                                 onClick={() => giveAnswer(i)}
-                                disabled={quizState.isAnswered}
+                                disabled={quizState.userAnswers[quizState.currentQuestion] !== null} 
+                                style={{
+                                    background:
+                                        quizState.userAnswers[quizState.currentQuestion] === i
+                                            ? 'lightblue'
+                                            : 'darkblue'
+                                }}
                             >
                                 {Eachanswer}
                             </button>
                         ))}
                     </div>
-                    <button onClick={previousQuestion} disabled={quizState.currentQuestion === 0}>
+
+                    <div style={{ marginTop: '10px' }}>
+                        <button onClick={previousQuestion} disabled={quizState.currentQuestion === 0}>
                             Previous Question
                         </button>
-                    {quizState.isAnswered && (
-                        <button onClick={nextQuestion}>Next Question</button>
-                    )}
+
+                        <button onClick={nextQuestion} style={{ marginLeft: '10px' }}>
+                            {quizState.currentQuestion === questions.length - 1 ? 'Finish Quiz' : 'Next Question'}
+                        </button>
+                    </div>
                 </div>
             ) : (
                 <p>Your Score: {quizState.score} / {questions.length}</p>
