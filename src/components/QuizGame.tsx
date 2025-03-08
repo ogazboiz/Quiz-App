@@ -1,38 +1,36 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { questions } from './QuizQuestions';
 
 interface IQuizQuestionState {
+    isAnswered: boolean;
     currentQuestion: number;
-    userAnswers: (number | null)[];
+    isCorrect: boolean | null;
+    selectedAnswer: number | null;
     score: number;
     isQuizOver: boolean;
 }
 
 const QuizGame = () => {
     const [quizState, setQuizState] = useState<IQuizQuestionState>({
+        isAnswered: false,
         currentQuestion: 0,
-        userAnswers: new Array(questions.length).fill(null), // Store answers per question
+        isCorrect: null,
+        selectedAnswer: null,
         score: 0,
         isQuizOver: false
     });
 
     const giveAnswer = (selectedAnswerIndex: number) => {
-        const { currentQuestion, userAnswers } = quizState;
+        if (quizState.isAnswered) return;
 
-        // If the user has already answered this question, don't increase the score again
-        const wasAlreadyAnswered = userAnswers[currentQuestion] !== null;
-        const isAnswerCorrect = selectedAnswerIndex === questions[currentQuestion].answer;
+        const isAnswerCorrect = selectedAnswerIndex === questions[quizState.currentQuestion].answer;
 
         setQuizState((prev) => ({
             ...prev,
-            userAnswers: prev.userAnswers.map((ans, index) =>
-                index === currentQuestion ? selectedAnswerIndex : ans
-            ),
-            score: wasAlreadyAnswered
-                ? prev.score
-                : isAnswerCorrect
-                ? prev.score + 1 
-                : prev.score
+            isAnswered: true,
+            isCorrect: isAnswerCorrect,
+            selectedAnswer: selectedAnswerIndex,
+            score: isAnswerCorrect ? prev.score + 1 : prev.score
         }));
     };
 
@@ -40,7 +38,10 @@ const QuizGame = () => {
         if (quizState.currentQuestion + 1 < questions.length) {
             setQuizState((prev) => ({
                 ...prev,
-                currentQuestion: prev.currentQuestion + 1
+                currentQuestion: prev.currentQuestion + 1,
+                isAnswered: false,
+                isCorrect: null,
+                selectedAnswer: null
             }));
         } else {
             setQuizState((prev) => ({
@@ -49,12 +50,14 @@ const QuizGame = () => {
             }));
         }
     };
-
     const previousQuestion = () => {
         if (quizState.currentQuestion > 0) {
             setQuizState((prev) => ({
                 ...prev,
-                currentQuestion: prev.currentQuestion - 1
+                currentQuestion: prev.currentQuestion - 1,
+                isAnswered: false,
+                isCorrect: null,
+                selectedAnswer: null
             }));
         }
     };
@@ -70,28 +73,18 @@ const QuizGame = () => {
                             <button
                                 key={i}
                                 onClick={() => giveAnswer(i)}
-                                disabled={quizState.userAnswers[quizState.currentQuestion] !== null} // Disable if answered
-                                style={{
-                                    background:
-                                        quizState.userAnswers[quizState.currentQuestion] === i
-                                            ? 'lightblue'
-                                            : 'darkblue'
-                                }}
+                                disabled={quizState.isAnswered}
                             >
                                 {Eachanswer}
                             </button>
                         ))}
                     </div>
-
-                    <div style={{ marginTop: '10px' }}>
-                        <button onClick={previousQuestion} disabled={quizState.currentQuestion === 0}>
+                    <button onClick={previousQuestion} disabled={quizState.currentQuestion === 0}>
                             Previous Question
                         </button>
-
-                        <button onClick={nextQuestion} style={{ marginLeft: '10px' }}>
-                            {quizState.currentQuestion === questions.length - 1 ? 'Finish Quiz' : 'Next Question'}
-                        </button>
-                    </div>
+                    {quizState.isAnswered && (
+                        <button onClick={nextQuestion}>Next Question</button>
+                    )}
                 </div>
             ) : (
                 <p>Your Score: {quizState.score} / {questions.length}</p>
